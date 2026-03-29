@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>My Mobile Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    #map { height: 100vh; width: 100vw; margin: 0; padding: 0; }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+// Create map
+var map = L.map('map').setView([49.5, -117.3], 12);
+
+// Basemap
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19
+}).addTo(map);
+
+// Layer control
+var layerControl = L.control.layers(null, null, { collapsed: false }).addTo(map);
+
+// Load your layers
+function loadLayer(file, name) {
+  fetch(file)
+    .then(r => r.json())
+    .then(data => {
+      var layer = L.geoJSON(data, {
+        onEachFeature: function (feature, layer) {
+          let props = feature.properties;
+          let html = Object.keys(props)
+            .map(k => `<b>${k}</b>: ${props[k]}`)
+            .join("<br>");
+          layer.bindPopup(html);
+        }
+      });
+      layer.addTo(map);
+      layerControl.addOverlay(layer, name);
+    });
+}
+
+loadLayer('layer1.geojson', 'Layer 1');
+loadLayer('layer2.geojson', 'Layer 2');
+loadLayer('layer3.geojson', 'Layer 3');
+
+// GPS location
+var gpsMarker = null;
+
+map.locate({ watch: true, setView: true, maxZoom: 16 });
+
+map.on('locationfound', function(e) {
+  if (!gpsMarker) {
+    gpsMarker = L.marker(e.latlng).addTo(map);
+  } else {
+    gpsMarker.setLatLng(e.latlng);
+  }
+});
+
+map.on('locationerror', function() {
+  alert("GPS not available");
+});
+</script>
+
+</body>
+</html>
